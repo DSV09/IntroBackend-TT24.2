@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+//Estrutura que representa a tabela de Aluno
+model Aluno {
+  //Campos associados a tabela de aluno
+  id          Int     @id @default(autoincrement())
+  email       String  @unique
+  name        String
+
+  //Campos para representar autorelação (Dupla de trabalho) de 1:1 em aluno
+  //Sinal de ? para representar campo opcional, já que a dupla nessa modelagem é opcional
+  alunoB      Aluno?  @relation("Dupla")   
+  alunoA      Aluno?  @relation("Dupla", fields: [alunoDuplaId], references:[id])
+  alunoDuplaId  Int?  @unique
+
+  //Campo para representar relação de 1:1 com outra tabela (nesse caso Matricula)
+  matricula   Matricula?
+
+  //Campos para representar relação de 1:N com outra tabela (nesse caso Professor)
+  professor   Professor @relation(fields: [professorId], references:[id])
+  professorId Int
+
+  //Exemplo de atributo de tabela, onde, ele muda o nome da tabela para o que for passado
+  //Nesse caso estou mudando o nome de Aluno (com A maiusculo) para aluno (com a minusculo)
+  @@map("aluno")
+}
+
+//Estrutura que representa a tabela de Matricula
+model Matricula {
+  //Campos associados a tabela de Matricula
+  id        Int       @id @default(autoincrement())
+  date      DateTime  @default(now())
+
+  //Campos para representar a relação de 1:1 com a tabela de Aluno
+  aluno     Aluno     @relation(fields: [alunoId], references:[id])
+  alunoId   Int       @unique
+}
+
+//Estrutura que representa a tabela de Professor
+model Professor {
+  //Campos associados a tabela de Professor
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String    
+  turmas    String[]    //Exemplo de atributo multivalorados
+
+  //Campo para representar a relação de 1:N com a tabela de Aluno
+  aluno     Aluno[]  
+
+  //Campo para representar a relação de M:N com a tabela de Escola
+  escola    Escola[]
+}
+
+//Estrutura que representa a tabela de Escola
+model Escola {
+  //Campos associados a tabela de Escola
+  id       Int     @id @default(autoincrement())
+  nome     String
+  //Exemplo de atributos compostos (rua, nummero e referencia juntos são o campo composto)  
+  rua      String  @map("rua") @db.VarChar(25)
+  numero   Int     @map("numero")
+  ref      String  @map("referencia") @db.VarChar(50)
+  @@unique([rua, numero, ref])
+
+  //Campo para representar a relação de M:N com a tabela de Professor
+  professor Professor[]
+}
